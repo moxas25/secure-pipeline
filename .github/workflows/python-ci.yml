@@ -26,3 +26,24 @@ jobs:
       - name: Run tests
         run: |
           python -m unittest discover
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: python
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+      - name: Dependency Check
+        run: |
+         pip install safety
+         safety check
+      - name: Secret Scan
+        uses: trufflesecurity/trufflehog@v3
+        with:
+          scanArguments: --regex --entropy=True
+      - name: Dependency Check
+        run: |
+         pip install safety
+         safety check
+        continue-on-error: false
+
