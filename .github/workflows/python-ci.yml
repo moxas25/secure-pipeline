@@ -1,8 +1,12 @@
 name: CI Pipeline
 
 on:
+  push:
+    branches:
+      - '*'
   pull_request:
-    branches: [main]
+    branches:
+      - '*'
   schedule:
     - cron: '0 0 * * 0'  # Weekly SAST scan
 
