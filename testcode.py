@@ -1,31 +1,34 @@
 import os
 import hashlib
+import sqlite3
 
-def insecure_password_storage(password):
-    # Insecure password storage using MD5 (weak hashing algorithm)
-    hash_object = hashlib.md5(password.encode())
-    return hash_object.hexdigest()
+# Hard-coded credentials (kwetsbaarheid)
+USERNAME = "admin"
+PASSWORD = "SuperSecret123"
 
-def hardcoded_secret():
-    # Hardcoded API key (sensitive data exposure)
-    api_key = "12345-SECRET-API-KEY-67890"
-    return api_key
+def insecure_hash(password):
+    """Gebruik van een verouderde hashing-methode (MD5)"""
+    return hashlib.md5(password.encode()).hexdigest()
 
-def sql_injection_example(user_input):
-    # Vulnerable to SQL Injection
-    query = f"SELECT * FROM users WHERE username = '{user_input}'"
-    print(f"Executing query: {query}")
+def authenticate(user, pwd):
+    if user == USERNAME and insecure_hash(pwd) == insecure_hash(PASSWORD):
+        print("Authenticated!")
+    else:
+        print("Authentication failed!")
 
-def main():
-    # Example usage
-    password = "mypassword123"
-    print(f"Insecure hashed password: {insecure_password_storage(password)}")
-
-    secret = hardcoded_secret()
-    print(f"Hardcoded API key: {secret}")
-
-    user_input = input("Enter your username: ")
-    sql_injection_example(user_input)
+def store_user_data(user, pwd):
+    """Kwetsbare database-opslag zonder encryptie"""
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT)")
+    cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (user, pwd))
+    conn.commit()
+    conn.close()
+    print("User data stored.")
 
 if __name__ == "__main__":
-    main()
+    # Simuleer login en opslag
+    user_input = input("Enter username: ")
+    pwd_input = input("Enter password: ")
+    authenticate(user_input, pwd_input)
+    store_user_data(user_input, pwd_input)
