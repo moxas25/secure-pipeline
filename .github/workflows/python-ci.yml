@@ -1,14 +1,11 @@
 name: CI Pipeline
 
 on:
-  push:
-    branches:
-      - '*'
   pull_request:
     branches:
-      - '*'
+      - '*'  # Triggers on pull request to any branch
   schedule:
-    - cron: '0 0 * * 0'  # Weekly SAST scan
+    - cron: '0 0 * * 0'  # Weekly SAST scan every Sunday at midnight UTC
 
 jobs:
   build:
@@ -32,12 +29,25 @@ jobs:
       run: |
         pytest
 
-    - name: Run Bandit (SAST)
+    - name: Run Bandit (SAST) - Security Analysis
       run: |
         pip install bandit
-        bandit -r .
+        bandit -r . -v
+      continue-on-error: false  # Fails the PR if there are security issues
+
+    - name: Run Dependency Vulnerability Check (Dependabot)
+      run: |
+        pip install safety
+        safety check --full-report
+      continue-on-error: false  # Fails the PR if there are vulnerable dependencies
 
     - name: Run Gitleaks (Secrets Scan)
       uses: gitleaks/gitleaks-action@v1
       with:
         config-path: .gitleaks.toml
+      continue-on-error: false  # Fails the PR if secrets are found
+
+    - name: Success
+      run: echo "All checks passed successfully!"
+      if: success()  # This step runs only if all previous steps succeed
+
