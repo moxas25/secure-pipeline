@@ -1,20 +1,34 @@
-# hello_world.py
 import os
+import hashlib
+import sqlite3
 
-def hello_world(name):
-    """
-    Function that returns a greeting message
-    """
-    return f"Hello, {name}!"
+# Hard-coded credentials (kwetsbaarheid)
+USERNAME = "admin"
+PASSWORD = "SuperSecret123"
 
-def secret_function():
-    """
-    A function that simulates a secret being hardcoded in the code
-    """
-    api_key = "my-secret-api-key-12345"
-    print(f"API Key: {api_key}")
+def insecure_hash(password):
+    """Gebruik van een verouderde hashing-methode (MD5)"""
+    return hashlib.md5(password.encode()).hexdigest()
+
+def authenticate(user, pwd):
+    if user == USERNAME and insecure_hash(pwd) == insecure_hash(PASSWORD):
+        print("Authenticated!")
+    else:
+        print("Authentication failed!")
+
+def store_user_data(user, pwd):
+    """Kwetsbare database-opslag zonder encryptie"""
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT)")
+    cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (user, pwd))
+    conn.commit()
+    conn.close()
+    print("User data stored.")
 
 if __name__ == "__main__":
-    name = os.getenv("USER_NAME", "World")  # Using environment variable or default value
-    print(hello_world(name))
-    secret_function()  # Simulates a secret in code
+    # Simuleer login en opslag
+    user_input = input("Enter username: ")
+    pwd_input = input("Enter password: ")
+    authenticate(user_input, pwd_input)
+    store_user_data(user_input, pwd_input)
