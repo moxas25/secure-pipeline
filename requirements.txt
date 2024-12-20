@@ -1,6 +1,5 @@
 # Security tools
 bandit==1.7.6
-gitleaks==8.18.0
 safety==2.3.5
 
 # Testing tools
