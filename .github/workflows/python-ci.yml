@@ -1,52 +1,50 @@
-name: Python CI
+name: CI Security Pipeline
 
 on:
   pull_request:
     branches:
       - main
   schedule:
-    - cron: "0 0 * * 0"  # Runs weekly (every Sunday at midnight UTC)
+    - cron: '0 0 * * 0'  # Elke zondag om middernacht
 
 jobs:
-  build:
+  security-checks:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout the code
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      # 1. Haal de code op
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Set up Python
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.9
+      # 2. Installeer Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
-    # Install dependencies
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      # 3. Installeer dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    # Run tests (adjust if you have specific tests)
-    - name: Run tests
-      run: |
-        pytest
+      # 4. SAST-scan met Bandit
+      - name: Run Bandit (SAST)
+        run: bandit -r .
+      
+      # 5. Dependency check met Safety
+      - name: Run Safety (Dependency Check)
+        run: safety check --full-report
 
-    # Static analysis for SAST (Static Application Security Testing)
-    - name: Static Analysis (SAST)
-      run: |
-        pip install bandit
-        bandit -r .
+      # 6. Geheime sleutels en wachtwoorden detectie met Gitleaks
+      - name: Run Gitleaks (Secrets Detection)
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: --verbose --redact
 
-    # Check dependencies for vulnerabilities
-    - name: Dependency scan for vulnerabilities
-      run: |
-        pip install safety
-        safety check --full-report
-
-    # Check if secrets are exposed in the codebase
-    - name: Check for secrets in the code
-      uses: zricethezav/gitleaks-action@v1
-      with:
-        args: --no-gitignore --redact
+      # 7. Controleer of alle checks succesvol zijn
+      - name: Check for warnings or errors
+        if: failure()
+        run: |
+          echo "Er zijn veiligheidsproblemen gedetecteerd. De pull request wordt afgekeurd."
+          exit 1
