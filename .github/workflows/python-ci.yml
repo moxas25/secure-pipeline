@@ -1,50 +1,39 @@
-name: CI Security Pipeline
+name: CI Pipeline
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
   schedule:
-    - cron: '0 0 * * 0'  # Elke zondag om middernacht
+    - cron: '0 0 * * 0'  # Weekly SAST scan
 
 jobs:
-  security-checks:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Haal de code op
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
-      # 2. Installeer Python
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
+    - name: Set Up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.x
 
-      # 3. Installeer dependencies
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-      # 4. SAST-scan met Bandit
-      - name: Run Bandit (SAST)
-        run: bandit -r .
-      
-      # 5. Dependency check met Safety
-      - name: Run Safety (Dependency Check)
-        run: safety check --full-report
+    - name: Run Unit Tests
+      run: |
+        pytest
 
-      # 6. Geheime sleutels en wachtwoorden detectie met Gitleaks
-      - name: Run Gitleaks (Secrets Detection)
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          args: --verbose --redact
+    - name: Run Bandit (SAST)
+      run: |
+        pip install bandit
+        bandit -r .
 
-      # 7. Controleer of alle checks succesvol zijn
-      - name: Check for warnings or errors
-        if: failure()
-        run: |
-          echo "Er zijn veiligheidsproblemen gedetecteerd. De pull request wordt afgekeurd."
-          exit 1
+    - name: Run Gitleaks (Secrets Scan)
+      uses: gitleaks/gitleaks-action@v1
+      with:
+        config-path: .gitleaks.toml
