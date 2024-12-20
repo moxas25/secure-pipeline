@@ -2,47 +2,51 @@ name: Python CI
 
 on:
   pull_request:
+    branches:
+      - main
   schedule:
-    - cron: '0 0 * * 0'  # Elke zondag om middernacht
+    - cron: "0 0 * * 0"  # Runs weekly (every Sunday at midnight UTC)
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    # Checkout the code
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: 3.x
+    # Set up Python
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    # Install dependencies
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-      - name: Run tests
-        run: python -m unittest discover
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: python
+    # Run tests (adjust if you have specific tests)
+    - name: Run tests
+      run: |
+        pytest
 
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-      - name: Dependency Check
-        run: |
-         pip install safety
-         safety check
-      - name: Secret Scan
-        uses: trufflesecurity/trufflehog@v2
-        with:
-          scanArguments: --regex --entropy=True
-      - name: Dependency Check
-        run: |
-         pip install safety
-         safety check
-        continue-on-error: false
+    # Static analysis for SAST (Static Application Security Testing)
+    - name: Static Analysis (SAST)
+      run: |
+        pip install bandit
+        bandit -r .
 
+    # Check dependencies for vulnerabilities
+    - name: Dependency scan for vulnerabilities
+      run: |
+        pip install safety
+        safety check --full-report
+
+    # Check if secrets are exposed in the codebase
+    - name: Check for secrets in the code
+      uses: zricethezav/gitleaks-action@v1
+      with:
+        args: --no-gitignore --redact
